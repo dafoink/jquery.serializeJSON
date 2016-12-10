@@ -933,8 +933,8 @@ describe("$.serializeJSON", function () {
       });
 
       if ($.fn.jquery) { // not supported on Zepto
-        it('works on multiple forms and inputs', function() {
-          var $form1, $form2, $els;
+        it('works on a complex set of multiple forms and inputs', function() {
+          var $form1, $form2, $form3, $els;
           $form1 = $('<form>');
           $form1.append($('<input type="text"     name="form1[title]"  value="form1"/>'));
           $form1.append($('<input type="checkbox" name="form1[check1]" value="true"/>'));
@@ -943,14 +943,16 @@ describe("$.serializeJSON", function () {
           $form1.append($('<input type="text"     name="form2[title]"  value="form2"/>'));
           $form2.append($('<input type="checkbox" name="form2[check1]" value="true" checked="checked"/>'));
           $form2.append($('<input type="checkbox" name="form2[check2]" value="true" />'));
-          $inputs = $()
-                  .add($('<input type="text"      name="inputs[title]"  value="inputs"/>'))
-                  .add($('<input type="checkbox"  name="inputs[check1]" value="true" checked="checked"/>'))
-                  .add($('<input type="checkbox"  name="inputs[check2]" value="true"/>'))
-                  .add($('<input type="checkbox"  name="inputs[check3]" value="true" data-unchecked-value="NOPE"/>'));
+          $form3 = $('<form>');
+          $form3.append($('<input type="text"      name="inputs[title]"  value="inputs"/>'))
+          $form3.append($('<input type="checkbox"  name="inputs[check1]" value="true" checked="checked"/>'))
+          $form3.append($('<input type="checkbox"  name="inputs[check2]" value="true"/>'))
+          $form3.append($('<input type="checkbox"  name="inputs[check3]" value="true" data-unchecked-value="NOPE"/>'));
+          $inputs = $form3.find('input');
           $els = $form1.add($form2).add($inputs);
 
           obj = $els.serializeJSON({checkboxUncheckedValue: 'false'});
+
           expect(obj).toEqual({
             form1: {
               title: 'form1',

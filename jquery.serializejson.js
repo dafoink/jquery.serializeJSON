@@ -22,14 +22,17 @@
 
   // jQuery('form').serializeJSON()
   $.fn.serializeJSON = function (options) {
-    var f, $form, opts, formAsArray, serializedObject, name, value, parsedValue, _obj, nameWithNoType, type, keys, skipFalsy;
+    var f, $form, $hiddenInputs, opts, formAsArray, serializedObject, name, value, parsedValue, _obj, nameWithNoType, type, keys, skipFalsy;
     f = $.serializeJSON;
-    $form = this; // NOTE: the set of matched elements is most likely a form, but it could also be a group of inputs
     opts = f.setupOpts(options); // calculate values for options {parseNumbers, parseBoolens, parseNulls, ...} with defaults
+    $form = this; // set of matched elements, is most likely a form but it could also be a group of inputs or anything else.
+
+    $hiddenInputs = f.addHiddenInputsBeforeCheckboxes(opts, $form); // if the option to read unchecked checkboxes is enabled, add hidden inputs before each checkbox to ensure it's picked up by serializeArray
 
     // Use native `serializeArray` function to get an array of {name, value} objects.
-    formAsArray = $form.serializeArray();
-    f.readCheckboxUncheckedValues(formAsArray, opts, $form); // add objects to the array from unchecked checkboxes if needed
+    formAsArray = $form.add($hiddenInputs).serializeArray();
+
+    $hiddenInputs.remove(); // cleanup
 
     // Convert the formAsArray into a serializedObject with nested keys
     serializedObject = {};
@@ -180,6 +183,35 @@
           formAsArray.push({name: el.name, value: uncheckedValue});
         }
       });
+    },
+
+    // If the option to read unchecked checkboxes is enabled, 
+    // add hidden inputs before each checkbox with the unchecked value to ensure it is picked up by serializeArray.
+    // Returns a jQuery object with a list of added inputs (may be empty).
+    addHiddenInputsBeforeCheckboxes: function (opts, $form) {
+      var selector, $uncheckedCheckboxes, $el, uncheckedValue, f, name, hiddenInputs;
+
+      selector = 'input[type=checkbox][name]:not(:checked):not([disabled])';
+      $uncheckedCheckboxes = $form.find(selector).add($form.filter(selector));
+
+      hiddenInputs = [];
+      $uncheckedCheckboxes.each(function (i, el) {
+        // Check data attr first, then the option
+        $el = $(el);
+        uncheckedValue = $el.attr('data-unchecked-value');
+        if (uncheckedValue == null) {
+          uncheckedValue = opts && opts.checkboxUncheckedValue;
+        }
+
+        // If there's an uncheckedValue, add the hidden input before this input
+        if (uncheckedValue != null) {
+          var $hiddenInput = $('<input type="hidden" name="'+el.name+'" value="'+uncheckedValue+'" data-created-by-jquery-serializejson="true"/>');
+          $el.before($hiddenInput); // add to DOM (to ensure it is serialized before the checkbox)
+          hiddenInputs.push($hiddenInput); // add to list to be returned
+        }
+      });
+
+      return $(hiddenInputs); // return jQuery object
     },
 
     // Returns and object with properties {name_without_type, type} from a given name.
